@@ -9,18 +9,18 @@ const signup = async (req, res) => {
   const { name, email, password } = req.body;
   try {
     if (await User.findOne({ email })) {
-      {
-        res.status(400).json({ message: "User already exists with the email" });
-      }
+      return res
+        .status(400)
+        .json({ message: "User already exists with the email" });
     }
-    const newPass = await hash(password);
+
     const user = new User({
       name,
       email,
-      password: newPass,
+      password: await hash(password),
       contacts: [],
     });
-    console.log(user);
+
     await user.save();
     res.status(201).json({ message: "User created successfully" });
   } catch (err) {
@@ -37,9 +37,9 @@ const login = async (req, res) => {
     }
     if (await hashcmp(password, user.password)) {
       const token = jwt.sign(
-        { email: user.email, userId: user._id },
+        { email: user.email, userId: user._id.toString() },
         process.env.JWT_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "7d" }
       );
       return res.status(200).json({ token, message: "Login successful" });
     }
@@ -53,11 +53,11 @@ const addContact = async (req, res) => {
   const { userid, email } = req.body;
   try {
     const user = await User.findById(userid);
-    const contact = await User.find({ email: email });
+    const contact = await User.findOne({ email: email });
     if (!contact) {
       return res.status(400).json({ message: "Contact not found" });
     }
-    user.contacts.push(contact[0]._id);
+    user.contacts.push(contact._id);
     await user.save();
     res.status(200).json({ message: "Contact added successfully" });
   } catch (error) {
