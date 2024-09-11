@@ -2,7 +2,11 @@ const Chat = require("../Models/chat.model");
 const User = require("../Models/user.model");
 
 const Msg = require("../Models/msg.model");
+let io;
 
+const setIo = (newIo) => {
+  io = newIo;
+};
 const sendmsg = async (req, res) => {
   const { chatid, senderid, receiverid, msg } = req.body;
 
@@ -28,6 +32,7 @@ const sendmsg = async (req, res) => {
     await message.save();
     chat.msgs.push(message._id);
     await chat.save();
+    io.to(chatid).emit(`msg-${chatid}`, message);
 
     res.status(201).json({ message });
   } catch (error) {
@@ -56,9 +61,9 @@ const getmsg = async (req, res) => {
 
     res.status(200).json({ messages: chat.msgs });
   } catch (error) {
-    console.error(error); // Log the error for debugging
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
 
-module.exports = { sendmsg, getmsg };
+module.exports = { sendmsg, getmsg, setIo };

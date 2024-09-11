@@ -41,9 +41,26 @@ const login = async (req, res) => {
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
       );
-      return res.status(200).json({ token, message: "Login successful" });
+      return res
+        .status(200)
+        .json({ token, message: `Login successful`, id: user._id });
     }
     res.status(400).json({ message: "Invalid credentials" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getinfo = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id).populate("contacts").exec();
+    // const user = await User.findById(id);
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    console.log(id);
+    res.status(200).json(user.contacts);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -65,4 +82,4 @@ const addContact = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, addContact };
+module.exports = { signup, login, addContact, getinfo };

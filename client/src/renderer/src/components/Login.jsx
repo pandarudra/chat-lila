@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
 const Login = () => {
@@ -9,6 +9,16 @@ const Login = () => {
   const [Auth, setAuth] = useState({
     isAuthenticated: false
   })
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const uid = localStorage.getItem('uID')
+    if (token && uid) {
+      navigate(`/home/${uid}`)
+      console.log(Auth)
+    }
+  }, [navigate])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -16,15 +26,20 @@ const Login = () => {
       const res = await axios.post('http://localhost:3000/api/login', { email, password })
       toast.success('Login successful')
       const token = res.data.token
+      const uid = res.data.id
       console.log(res)
       if (res.statusText === 'OK') {
+        localStorage.clear()
         localStorage.setItem('token', token)
+        localStorage.setItem('uID', uid)
         setAuth({
           isAuthenticated: true
         })
+        navigate(`/home/${res.data.id}`)
         console.log(Auth)
       }
     } catch (error) {
+      localStorage.clear()
       toast.error(error.response.data.message)
     }
   }

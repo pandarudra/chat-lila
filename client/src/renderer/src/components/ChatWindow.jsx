@@ -1,14 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import io from 'socket.io-client'
 
-const ChatWindow = ({ activeChat }) => {
+// const socket = useMemo(() => io('http://localhost:3000'), [])
+const socket = io('http://localhost:3000')
+const ChatWindow = ({ userId, activeChat }) => {
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([])
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      setMessages([...messages, { id: Date.now(), sender: 'You', content: message }])
-      setMessage('')
+  useEffect(() => {
+    if (!activeChat) return
+    socket.on('connect', () => {
+      console.log('Connected to server')
+    })
+    socket.emit('register', userId)
+    socket.on(`msg-${activeChat}`, (newMessage) => {
+      setMessages((prev) => [...prev, newMessage])
+    })
+    return () => {
+      socket.off(`msg-${activeChat}`)
     }
+  }, [activeChat, userId])
+  const handleSendMessage = () => {
+    if (!message) return
+
+    const newMessage = {
+      id: messages.length + 1,
+      sender: 'You',
+      content: message
+    }
+
+    socket.emit('message', newMessage)
+    setMessage('')
   }
 
   return (
@@ -16,7 +38,7 @@ const ChatWindow = ({ activeChat }) => {
       <div className="flex-grow p-4 overflow-y-auto bg-gray-100">
         {activeChat ? (
           <>
-            <div className="text-xl font-bold mb-4">{activeChat.name}</div>
+            <div className="text-lg font-bold mb-4 h-20 w-full">{activeChat.name}😉</div>
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -43,11 +65,11 @@ const ChatWindow = ({ activeChat }) => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-grow p-2 border rounded-l-lg focus:outline-none focus:border-blue-500"
+            className="flex-grow p-2 border border-black rounded-l-lg focus:outline-none focus:border-blue-500"
           />
           <button
             onClick={handleSendMessage}
-            className="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600"
+            className="bg-blue-500 border-black text-white px-4 py-2 rounded-r-lg hover:bg-blue-600"
           >
             Send
           </button>
